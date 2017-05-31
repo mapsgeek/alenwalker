@@ -1,5 +1,6 @@
 <div id="map" class="mapboxgl-map">
 </div>
-<button type="button" name="button" (click)="addlayers()">add layers</button>
-<button type="button" name="button" (click)="removelayers()">remove layers</button>
-<button type="button" name="button" (click)="query()">query layers</button>
+<button type="button" name="button" (click)="changeStreets()">Streets</button>
+<button type="button" name="button" (click)="changeBasic()">Basic</button>
+
+<label><input type="checkbox" [(ngModel)]="state" (ngModelChange)="onChange($event)">layer</label>

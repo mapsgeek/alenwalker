@@ -11369,7 +11369,7 @@
             }
         },
         {
-            "id": "census-bjfccr",
+            "id": "census",
             "type": "circle",
             "source": "composite",
             "source-layer": "census-bjfccr",
