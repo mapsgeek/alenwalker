@@ -1,6 +1,8 @@
 <div id="map" class="mapboxgl-map">
 </div>
+
 <button type="button" name="button" (click)="changeStreets()">Streets</button>
 <button type="button" name="button" (click)="changeBasic()">Basic</button>
 
 <label><input type="checkbox" [(ngModel)]="state" (ngModelChange)="onChange($event)">layer</label>
+<p *ngFor="let feature of features">{{feature.properties.Outlet_Nam}}</p>
