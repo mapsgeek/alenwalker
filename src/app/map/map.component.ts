@@ -1,27 +1,30 @@
 import {
   Component,
   OnInit,
-  Input
+  Input,
+  OnDestroy
 } from '@angular/core';
 import {
   MapService
 } from '../map.service';
-
 declare var mapboxgl;
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.css']
 })
-export class MapComponent implements OnInit {
+export class MapComponent implements OnInit{
   map: any;
   features: any[];
-
+  clearState: boolean;
   constructor(private mapservice: MapService) {
 
   }
 
+
   ngOnInit() {
+
     let map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/mapbox/streets-v10',
@@ -30,6 +33,8 @@ export class MapComponent implements OnInit {
       hash: true
     });
 
+    // Disable default box zooming.
+   map.boxZoom.disable();
 
 
     map.addControl(new mapboxgl.NavigationControl());
@@ -38,7 +43,7 @@ export class MapComponent implements OnInit {
     this.map = this.mapservice.map;
 
     map.on('style.load', () => {
-      map.addSource('census', {
+        map.addSource('census', {
         'type': 'vector',
         'url': 'mapbox://ibrahimmohammed.8keg391s'
       });
@@ -59,30 +64,179 @@ export class MapComponent implements OnInit {
         }
       })
 
+        map.addLayer({
+        "id": "census-data-highlighted",
+        "type": "circle",
+        "source": "census",
+        "source-layer": "census-bjfccr",
+        "layout": {
+          "visibility": "visible"
+        },
+        "paint": {
+          "circle-color": "red",
+          "circle-stroke-color": "hsl(0, 0%, 100%)",
+          "circle-radius": 8,
+          "circle-stroke-width": 1.5,
+          "circle-opacity":0.3
+        },
+        "filter": ["in", "GlobalID", ""]
+
+      })
     })
 
 
+// Disable default box zooming.
+map.boxZoom.disable();
 
-    map.on('load', () => {
-      this.features = this.map.queryRenderedFeatures({
-        layers: ['census-data']
-      });
-      console.log(this.features)
-    })
+// Create a popup, but don't add it to the map yet.
+var popup = new mapboxgl.Popup({
+    closeButton: false
+});
+
+map.on('load', () => {
+    var canvas = map.getCanvasContainer();
+    
+    // Variable to hold the starting xy coordinates
+    // when `mousedown` occured.
+    var start;
+
+    // Variable to hold the current xy coordinates
+    // when `mousemove` or `mouseup` occurs.
+    var current;
+
+    // Variable for the draw box element.
+    var box;
+
+    // Set `true` to dispatch the event before other functions
+    // call it. This is necessary for disabling the default map
+    // dragging behaviour.
+    canvas.addEventListener('mousedown', mouseDown, true);
+
+    // Return the xy coordinates of the mouse position
+    function mousePos(e) {
+        var rect = canvas.getBoundingClientRect();
+        return new mapboxgl.Point(
+            e.clientX - rect.left - canvas.clientLeft,
+            e.clientY - rect.top - canvas.clientTop
+        );
+    }
+
+    function mouseDown(e) {
+        // Continue the rest of the function if the shiftkey is pressed.
+        if (!(e.shiftKey && e.button === 0)) return;
+
+        // Disable default drag zooming when the shift key is held down.
+        map.dragPan.disable();
+
+        // Call functions for the following events
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('keydown', onclick);
+
+        // Capture the first xy coordinates
+        start = mousePos(e);
+    }
+
+    var onMouseMove = (e) => {
+        // Capture the ongoing xy coordinates
+        current = mousePos(e);
+        // Append the box element if it doesnt exist
+        if (!box) {
+            box = document.createElement('div');
+            box.classList.add('boxdraw');
+            canvas.appendChild(box);
+        }
+
+        var minX = Math.min(start.x, current.x),
+            maxX = Math.max(start.x, current.x),
+            minY = Math.min(start.y, current.y),
+            maxY = Math.max(start.y, current.y);
+
+        // Adjust width and xy position of the box element ongoing
+        var pos = 'translate(' + minX + 'px,' + minY + 'px)';
+        box.style.transform = pos;
+        box.style.WebkitTransform = pos;
+        box.style.width = maxX - minX + 'px';
+        box.style.height = maxY - minY + 'px';
+        box.style.background = "#4286f4";
+        box.style.border = "2px",
+        box.style.opacity = "0.3"
+    }
+
+    function onMouseUp(e) {
+        // Capture xy coordinates
+        finish([start, mousePos(e)]);
+    }
+
+    // function onKeyDown(e) {
+    //     // If the ESC key is pressed
+    //     if (e.keyCode === 27) finish();
+    // }
+
+    let finish = (bbox) => {
+        // Remove these events now that finish has been called.
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('keydown', onclick);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        this.map.setLayoutProperty('census-data-highlighted', 'visibility', 'visible');
+
+        if (box) {
+            box.parentNode.removeChild(box);
+            box = null;
+        }
+
+        // If bbox exists. use this value as the argument for `queryRenderedFeatures`
+        if (bbox) {
+            this.features = map.queryRenderedFeatures(bbox, { layers: ['census-data'] });
+
+            this.clearState = true;
+            // Run through the selected features and set a filter
+            // to match features with unique FIPS codes to activate
+            // the `counties-highlighted` layer.
+            var filter = this.features.reduce(function(memo, feature) {
+                memo.push(feature.properties.GlobalID);
+                return memo;
+            }, ['in', 'GlobalID']);
+
+            map.setFilter("census-data-highlighted", filter);
+            console.log(this.features)
+        }
+        map.dragPan.enable();
+    }
+
+    map.on('mousemove', (e) => {
+        let features = map.queryRenderedFeatures(e.point, { layers: ['census-data-highlighted'] });
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
+
+        if (!features.length) {
+            popup.remove();
+            return;
+        }
+
+        var feature = features[0];
+
+        popup.setLngLat(e.lngLat)
+            .setText(feature.properties.Outlet_Nam)
+            .addTo(map);
+    });
+});
+
 
     // Change the cursor to a pointer when the mouse is over the places layer.
-    map.on('mouseenter', 'census-data', function () {
+    map.on('mousemove', 'census-data', function () {
       map.getCanvas().style.cursor = 'pointer';
     });
 
     // Change it back to a pointer when it leaves.
     map.on('mouseleave', 'census-data', function () {
       map.getCanvas().style.cursor = '';
+      
     });
 
     map.on('click', 'census-data', function (e) {
       var features = e.features[0].properties.Outlet_Nam;
-      console.log()
       new mapboxgl.Popup()
         .setLngLat(e.features[0].geometry.coordinates)
         .setHTML(e.features[0].properties.Outlet_Nam)
@@ -96,9 +250,15 @@ export class MapComponent implements OnInit {
     console.log(event)
     if (!event) {
       this.map.setLayoutProperty('census-data', 'visibility', 'none');
+      this.map.setLayoutProperty('census-data-highlighted', 'visibility', 'none');
     } else {
       this.map.setLayoutProperty('census-data', 'visibility', 'visible');
     }
+  }
+
+  clearSelection() {
+     this.map.setLayoutProperty('census-data-highlighted', 'visibility', 'none');
+     this.clearState = false;
   }
 
 

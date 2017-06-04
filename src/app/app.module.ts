@@ -17,7 +17,7 @@ import { PanelComponent } from './panel/panel.component';
     BrowserModule,
     FormsModule,
     HttpModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
   ],
   providers: [MapService],
   bootstrap: [AppComponent]
