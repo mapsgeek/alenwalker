@@ -5,4 +5,4 @@
 <button type="button" name="button" (click)="changeBasic()">Basic</button>
 
 <label><input type="checkbox" [(ngModel)]="state" (ngModelChange)="onChange($event)">layer</label>
-<p *ngFor="let feature of features">{{feature.properties.Outlet_Nam}}</p>
+<app-panel [f]="features"></app-panel>

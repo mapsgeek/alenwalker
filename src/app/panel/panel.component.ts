@@ -7,6 +7,8 @@ import { Component, OnInit,Input,Output,EventEmitter } from '@angular/core';
 })
 export class PanelComponent implements OnInit {
 
+  @Input() f:any[];
+
   constructor() { }
 
   ngOnInit() {
