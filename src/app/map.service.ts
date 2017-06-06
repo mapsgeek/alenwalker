@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { Subject }    from 'rxjs/Subject';
+
 declare var mapboxgl;
 import { Map } from 'mapbox-gl';
 
@@ -9,4 +11,4 @@ export class MapService {
       (mapboxgl as any).accessToken = 'pk.eyJ1IjoiaWJyYWhpbW1vaGFtbWVkIiwiYSI6IllCakYtY3cifQ.G63TqPIstx6002sFwlNY1w';
   }
 
-}
+  }

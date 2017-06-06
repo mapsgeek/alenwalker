@@ -2,11 +2,14 @@ import {
   Component,
   OnInit,
   Input,
-  OnDestroy
-} from '@angular/core';
+  OnDestroy,
+  EventEmitter,
+  Output
+  } from '@angular/core';
 import {
   MapService
 } from '../map.service';
+import { AmChartsService } from "@amcharts/amcharts3-angular"
 declare var mapboxgl;
 
 @Component({
@@ -16,15 +19,19 @@ declare var mapboxgl;
 })
 export class MapComponent implements OnInit{
   map: any;
-  features: any[];
   clearState: boolean;
-  constructor(private mapservice: MapService) {
+  private timer: any;
+  private chart: any;
+  chartData: any[];
+  chartstate: boolean;
+  constructor(public mapservice: MapService , private AmCharts: AmChartsService) {
 
   }
 
+  features: any[];
 
   ngOnInit() {
-
+      
     let map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/mapbox/streets-v10',
@@ -35,7 +42,6 @@ export class MapComponent implements OnInit{
 
     // Disable default box zooming.
    map.boxZoom.disable();
-
 
     map.addControl(new mapboxgl.NavigationControl());
 
@@ -189,7 +195,6 @@ map.on('load', () => {
         // If bbox exists. use this value as the argument for `queryRenderedFeatures`
         if (bbox) {
             this.features = map.queryRenderedFeatures(bbox, { layers: ['census-data'] });
-
             this.clearState = true;
             // Run through the selected features and set a filter
             // to match features with unique FIPS codes to activate
@@ -200,10 +205,53 @@ map.on('load', () => {
             }, ['in', 'GlobalID']);
 
             map.setFilter("census-data-highlighted", filter);
-            console.log(this.features)
         }
         map.dragPan.enable();
-    }
+        
+        
+        console.log(this.features)
+       
+        this.chartData = [];
+        for( var i = 0; i < this.features.length; i++ ) {
+            this.chartData.push( {
+              "x": this.features[i].properties.L_M_SC,
+              "y": this.features[i].properties.Outlet_Typ
+            } )
+          }
+
+        this.chart = this.AmCharts.makeChart("chartdiv", {
+          "type": "serial",
+            "theme": "light",
+            "dataProvider":this.chartData,
+            "valueAxes": [ {
+              "gridColor": "#FFFFFF",
+              "gridAlpha": 0.2,
+              "dashLength": 0
+            } ],
+            "gridAboveGraphs": true,
+            "startDuration": 1,
+            "graphs": [ {
+              "balloonText": "[[category]]: <b>[[value]]</b>",
+              "fillAlphas": 0.8,
+              "lineAlpha": 0.2,
+              "type": "column",
+              "valueField": "x"
+            } ],
+            "chartCursor": {
+              "categoryBalloonEnabled": false,
+              "cursorAlpha": 0,
+              "zoomable": false
+            },
+            "categoryField": "y",
+
+            "export": {
+              "enabled": true
+            }
+
+              });
+      }
+      
+      this.chartstate = false;
 
     map.on('mousemove', (e) => {
         let features = map.queryRenderedFeatures(e.point, { layers: ['census-data-highlighted'] });
@@ -245,6 +293,12 @@ map.on('load', () => {
   }
 
 
+    onshowCharts() {
+    if(this.chartData.length > 0) {
+      this.chartstate = true
+    }
+    }
+
   state = !this.state;
   onChange(event) {
     console.log(event)
@@ -259,6 +313,46 @@ map.on('load', () => {
   clearSelection() {
      this.map.setLayoutProperty('census-data-highlighted', 'visibility', 'none');
      this.clearState = false;
+     this.features = [];
+     let chartData = [];
+        
+        for( var i = 0; i < this.features.length; i++ ) {
+            chartData.push( {
+              "x": this.features[i].properties.L_M_SC,
+              "y": this.features[i].properties.Outlet_Typ
+            } )
+          }
+
+          this.chart = this.AmCharts.makeChart("chartdiv", {
+          "type": "serial",
+            "theme": "light",
+            "dataProvider":chartData,
+            "valueAxes": [ {
+              "gridColor": "#FFFFFF",
+              "gridAlpha": 0.2,
+              "dashLength": 0
+            } ],
+            "gridAboveGraphs": true,
+            "startDuration": 1,
+            "graphs": [ {
+              "balloonText": "[[category]]: <b>[[value]]</b>",
+              "fillAlphas": 0.8,
+              "lineAlpha": 0.2,
+              "type": "column",
+              "valueField": "x"
+            } ],
+            "chartCursor": {
+              "categoryBalloonEnabled": false,
+              "cursorAlpha": 0,
+              "zoomable": false
+            },
+            "categoryField": "y",
+
+            "export": {
+              "enabled": true
+            }
+
+              });
   }
 
 
