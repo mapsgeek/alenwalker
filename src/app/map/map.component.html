@@ -6,5 +6,11 @@
 <button type="button" name="button" *ngIf="clearState" (click)="clearSelection()">Clear selection</button>
 
 <label><input type="checkbox" [(ngModel)]="state" (ngModelChange)="onChange($event)">layer</label>
+<<<<<<< HEAD
 <app-panel [f]="features"></app-panel>
 <app-charts></app-charts>
+=======
+<!--<app-panel [f]="features"></app-panel>-->
+<button (click)="onshowCharts()">show charts</button>
+<app-charts *ngIf="chartstate" [data]="features"></app-charts>
+>>>>>>> fe95e97035a8d33500d9bf92dacecc9cab697455
