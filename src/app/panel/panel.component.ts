@@ -12,6 +12,6 @@ export class PanelComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-
+    console.log(this.f)
   }
 }

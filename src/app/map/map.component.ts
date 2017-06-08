@@ -7,6 +7,7 @@ import {
 import {
   MapService
 } from '../map.service';
+
 declare var mapboxgl;
 
 @Component({
@@ -21,9 +22,11 @@ export class MapComponent implements OnInit{
   constructor(private mapservice: MapService) {
 
   }
-
+  
 
   ngOnInit() {
+
+   // intialize map
 
     let map = new mapboxgl.Map({
       container: 'map',
@@ -42,6 +45,7 @@ export class MapComponent implements OnInit{
     this.mapservice.map = map;
     this.map = this.mapservice.map;
 
+    //load data-source and add layers
     map.on('style.load', () => {
         map.addSource('census', {
         'type': 'vector',
@@ -93,6 +97,8 @@ var popup = new mapboxgl.Popup({
     closeButton: false
 });
 
+
+//drawing the selection box
 map.on('load', () => {
     var canvas = map.getCanvasContainer();
     
@@ -122,9 +128,10 @@ map.on('load', () => {
     }
 
     function mouseDown(e) {
+
         // Continue the rest of the function if the shiftkey is pressed.
         if (!(e.shiftKey && e.button === 0)) return;
-
+        map.getCanvas().style.cursor = 'default';
         // Disable default drag zooming when the shift key is held down.
         map.dragPan.disable();
 
@@ -146,6 +153,8 @@ map.on('load', () => {
             box.classList.add('boxdraw');
             canvas.appendChild(box);
         }
+        
+        map.getCanvas().style.cursor = 'default';
 
         var minX = Math.min(start.x, current.x),
             maxX = Math.max(start.x, current.x),
@@ -168,10 +177,6 @@ map.on('load', () => {
         finish([start, mousePos(e)]);
     }
 
-    // function onKeyDown(e) {
-    //     // If the ESC key is pressed
-    //     if (e.keyCode === 27) finish();
-    // }
 
     let finish = (bbox) => {
         // Remove these events now that finish has been called.
@@ -200,7 +205,6 @@ map.on('load', () => {
             }, ['in', 'GlobalID']);
 
             map.setFilter("census-data-highlighted", filter);
-            console.log(this.features)
         }
         map.dragPan.enable();
     }
@@ -259,6 +263,7 @@ map.on('load', () => {
   clearSelection() {
      this.map.setLayoutProperty('census-data-highlighted', 'visibility', 'none');
      this.clearState = false;
+     this.features = [];
   }
 
 
@@ -268,4 +273,5 @@ map.on('load', () => {
   changeBasic() {
     this.map.setStyle('mapbox://styles/mapbox/basic-v9')
   }
+  
 }

@@ -4,5 +4,7 @@
 <button type="button" name="button" (click)="changeStreets()">Streets</button>
 <button type="button" name="button" (click)="changeBasic()">Basic</button>
 <button type="button" name="button" *ngIf="clearState" (click)="clearSelection()">Clear selection</button>
+
 <label><input type="checkbox" [(ngModel)]="state" (ngModelChange)="onChange($event)">layer</label>
 <app-panel [f]="features"></app-panel>
+<app-charts></app-charts>
